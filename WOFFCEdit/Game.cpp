@@ -1,4 +1,4 @@
-//
+﻿//
 // Game.cpp
 //
 
@@ -26,7 +26,7 @@ Game::Game()
 
 	//functional
 	m_movespeed = 0.30;
-	m_camRotRate = 3.0;
+	m_camRotRate = 100.0;
 
 	//camera
 	m_camPosition.x = 0.0f;
@@ -147,16 +147,30 @@ void Game::Update(DX::StepTimer const& timer)
 
 	if (m_InputCommands.rotRight)
 	{
-		m_camOrientation.y -= m_camRotRate;
+		m_camOrientation.y += m_camRotRate * timer.GetElapsedSeconds();
 	}
 	if (m_InputCommands.rotLeft)
 	{
-		m_camOrientation.y += m_camRotRate;
+		m_camOrientation.y -= m_camRotRate * timer.GetElapsedSeconds();
+	}
+	if (m_InputCommands.rotUp)
+	{
+		m_camOrientation.x += m_camRotRate * timer.GetElapsedSeconds();
+	}
+	if (m_InputCommands.rotDown)
+	{
+		m_camOrientation.x -= m_camRotRate * timer.GetElapsedSeconds();
 	}
 
-	//create look direction from Euler angles in m_camOrientation
-	m_camLookDirection.x = sin((m_camOrientation.y)*3.1415 / 180);
-	m_camLookDirection.z = cos((m_camOrientation.y)*3.1415 / 180);
+	////create look direction from Euler angles in m_camOrientation
+	//m_camLookDirection.x = sin((m_camOrientation.y)*3.1415 / 180);
+	//m_camLookDirection.z = cos((m_camOrientation.y)*3.1415 / 180);
+	//m_camLookDirection.Normalize();
+
+
+	m_camLookDirection.x = cos((m_camOrientation.y) * 3.1415 / 180) * cos((m_camOrientation.x) * 3.1415 / 180); // * cos(Φ)
+	m_camLookDirection.y = sin((m_camOrientation.x) * 3.1415 / 180); // sin(Φ)
+	m_camLookDirection.z = sin((m_camOrientation.y) * 3.1415 / 180) * cos((m_camOrientation.x) * 3.1415 / 180); // * cos(Φ)
 	m_camLookDirection.Normalize();
 
 	//create right vector from look Direction
