@@ -32,6 +32,9 @@ public:
 	void Tick(InputCommands * Input);
 	void Render();
 
+	int MousePicking();
+	void SetSelectedID(int id);
+
 	// Rendering helpers
 	void Clear();
 
@@ -118,7 +121,8 @@ private:
     DirectX::SimpleMath::Matrix                                             m_view;
     DirectX::SimpleMath::Matrix                                             m_projection;
 
-
+	RECT m_ScreenDimensions;
+	int selectedID;
 };
 
 std::wstring StringToWCHART(std::string s);

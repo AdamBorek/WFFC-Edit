@@ -69,11 +69,6 @@ void Camera::Update(InputCommands input)
 	//create right vector from look Direction
 	m_camLookDirection.Cross(Vector3::UnitY, m_camRight);
 
-	//m_camLookDirection.x = cos((m_camOrientation.y) * 3.1415 / 180) * cos((m_camOrientation.x) * 3.1415 / 180);
-	//m_camLookDirection.y = sin((m_camOrientation.x) * 3.1415 / 180);
-	//m_camLookDirection.z = sin((m_camOrientation.y) * 3.1415 / 180) * cos((m_camOrientation.x) * 3.1415 / 180);
-	//m_camLookDirection.Normalize();
-
 	//process input and update stuff
 	if (input.forward)
 	{

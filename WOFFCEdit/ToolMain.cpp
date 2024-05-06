@@ -289,6 +289,13 @@ void ToolMain::Tick(MSG *msg)
 
 	//Renderer Update Call
 	m_d3dRenderer.Tick(&m_toolInputCommands);
+
+	if (m_toolInputCommands.mouse_left)
+	{
+		m_selectedObject = m_d3dRenderer.MousePicking();
+		m_d3dRenderer.SetSelectedID(m_selectedObject);
+		m_toolInputCommands.mouse_left = false;
+	}
 }
 
 void ToolMain::UpdateInput(MSG * msg)
