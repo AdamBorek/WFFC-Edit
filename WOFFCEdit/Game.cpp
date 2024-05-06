@@ -197,8 +197,6 @@ int Game::MousePicking()
         }
     }
 
-    //this->selectedID = selectedID;
-
     //if we got a hit.  return it.  
     return selectedID;
 }
@@ -251,6 +249,7 @@ void Game::Render()
 		m_deviceResources->PIXEndEvent();
 	}
 
+    // render object above selected object
     if (selectedID > -1 && selectedID < m_displayList.size())
     {
         m_deviceResources->PIXBeginEvent(L"Draw model");
