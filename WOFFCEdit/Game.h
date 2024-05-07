@@ -14,6 +14,7 @@
 #include <vector>
 #include "Camera.h"
 
+enum Mode { camera, selection, spawning };
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -32,8 +33,12 @@ public:
 	void Tick(InputCommands * Input);
 	void Render();
 
+	void ChangeMode(Mode newMode) { mode = newMode; }
+	Mode GetMode() { return mode; }
 	int MousePicking();
 	void SetSelectedID(int id);
+	void GenerateObject(DirectX::SimpleMath::Vector3 pos);
+	void PlaceObject();
 
 	// Rendering helpers
 	void Clear();
@@ -123,6 +128,7 @@ private:
 
 	RECT m_ScreenDimensions;
 	int selectedID;
+	Mode mode;
 };
 
 std::wstring StringToWCHART(std::string s);

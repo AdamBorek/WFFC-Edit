@@ -18,7 +18,6 @@ ToolMain::ToolMain()
 	m_toolInputCommands.back		= false;
 	m_toolInputCommands.left		= false;
 	m_toolInputCommands.right		= false;
-	
 }
 
 
@@ -290,12 +289,72 @@ void ToolMain::Tick(MSG *msg)
 	//Renderer Update Call
 	m_d3dRenderer.Tick(&m_toolInputCommands);
 
+
+	// Handle changing modes
+	if (m_toolInputCommands.wheel_pos != m_toolInputCommands.last_wheel_pos)
+	{
+		if (m_toolInputCommands.wheel_pos > m_toolInputCommands.last_wheel_pos)
+		{
+
+			switch (m_d3dRenderer.GetMode())
+			{
+				case Mode::camera:
+					m_d3dRenderer.ChangeMode(Mode::spawning);
+					break;
+
+				case Mode::selection:
+					m_d3dRenderer.ChangeMode(Mode::camera);
+					break;
+
+				case Mode::spawning:
+					m_d3dRenderer.ChangeMode(Mode::selection);
+					break;
+			}
+		}
+		else if (m_toolInputCommands.wheel_pos < m_toolInputCommands.last_wheel_pos)
+		{
+			switch (m_d3dRenderer.GetMode())
+			{
+			case Mode::camera:
+				m_d3dRenderer.ChangeMode(Mode::selection);
+				break;
+
+			case Mode::selection:
+				m_d3dRenderer.ChangeMode(Mode::spawning);
+				break;
+
+			case Mode::spawning:
+				m_d3dRenderer.ChangeMode(Mode::camera);
+				break;
+			}
+		}
+
+	}
+
+	// Handle left click in different modes
 	if (m_toolInputCommands.mouse_left)
 	{
-		m_selectedObject = m_d3dRenderer.MousePicking();
-		m_d3dRenderer.SetSelectedID(m_selectedObject);
+		switch (m_d3dRenderer.GetMode())
+		{
+			case Mode::camera:
+				// do nothing
+				break;
+
+			case Mode::selection:
+				m_selectedObject = m_d3dRenderer.MousePicking();
+				m_d3dRenderer.SetSelectedID(m_selectedObject);
+				break;
+
+			case Mode::spawning:
+				m_d3dRenderer.PlaceObject();
+				break;
+
+		}
+
 		m_toolInputCommands.mouse_left = false;
 	}
+
+	m_toolInputCommands.last_wheel_pos = m_toolInputCommands.wheel_pos;
 }
 
 void ToolMain::UpdateInput(MSG * msg)
@@ -333,6 +392,10 @@ void ToolMain::UpdateInput(MSG * msg)
 	case WM_RBUTTONUP:
 		m_toolInputCommands.mouse_right = false;
 		break;
+
+	case WM_MOUSEWHEEL:
+		m_toolInputCommands.wheel_pos += GET_WHEEL_DELTA_WPARAM(msg->wParam);
+		break;
 	}
 
 	//here we update all the actual app functionality that we want.  This information will either be used int toolmain, or sent down to the renderer (Camera movement etc
@@ -345,6 +408,4 @@ void ToolMain::UpdateInput(MSG * msg)
 
 	m_toolInputCommands.up = m_keyArray['E'];
 	m_toolInputCommands.down = m_keyArray['Q'];
-
-	//WASD
 }

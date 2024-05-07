@@ -24,7 +24,9 @@ Game::Game()
 	//modes
 	m_grid = false;
 
-    
+    mode = Mode::camera;
+
+    selectedID = -1;
 }
 
 Game::~Game()
@@ -152,6 +154,61 @@ void Game::Update(DX::StepTimer const& timer)
    
 }
 #pragma endregion
+
+void Game::PlaceObject()
+{
+    const XMVECTOR nearSource = XMVectorSet(m_InputCommands.mouse_x, m_InputCommands.mouse_y, 0.0f, 1.0f);
+    const XMVECTOR farSource = XMVectorSet(m_InputCommands.mouse_x, m_InputCommands.mouse_y, 1.0f, 1.0f);
+
+    //Unproject the points on the near and far plane, with respect to the matrix we just created.
+    XMVECTOR nearPoint = XMVector3Unproject(nearSource, 0.0f, 0.0f, m_ScreenDimensions.right, m_ScreenDimensions.bottom, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, m_world);
+    XMVECTOR farPoint = XMVector3Unproject(farSource, 0.0f, 0.0f, m_ScreenDimensions.right, m_ScreenDimensions.bottom, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, m_world);
+
+    //get mouse cast vector
+    XMVECTOR mouseCast = farPoint - nearPoint;
+    mouseCast = XMVector3Normalize(mouseCast);
+
+    Vector3 newObjPos = nearPoint + mouseCast * 5;
+
+    GenerateObject(newObjPos);
+}
+
+
+void Game::GenerateObject(Vector3 pos)
+{
+    auto device = m_deviceResources->GetD3DDevice();
+    auto devicecontext = m_deviceResources->GetD3DDeviceContext();
+
+    DisplayObject newDisplayObject;
+
+    //load model						//convect string to Wchar
+    newDisplayObject.m_model = Model::CreateFromCMO(device, L"database/data/placeholder.cmo", *m_fxFactory, true);	//get DXSDK to load model "False" for LH coordinate system (maya)
+    CreateDDSTextureFromFile(device, L"database/data/placeholder.dds", nullptr, &newDisplayObject.m_texture_diffuse);	//load tex into Shader resource
+
+    //apply new texture to models effect
+    newDisplayObject.m_model->UpdateEffects([&](IEffect* effect) //This uses a Lambda function,  if you dont understand it: Look it up.
+        {
+            auto lights = dynamic_cast<BasicEffect*>(effect);
+            if (lights)
+            {
+                lights->SetTexture(newDisplayObject.m_texture_diffuse);
+            }
+        });
+
+    //set position
+    newDisplayObject.m_position.x = pos.x;
+    newDisplayObject.m_position.y = pos.y;
+    newDisplayObject.m_position.z = pos.z;
+
+    //set scale
+    newDisplayObject.m_scale.x = 1;
+    newDisplayObject.m_scale.y = 1;
+    newDisplayObject.m_scale.z = 1;
+
+    newDisplayObject.m_render = true;
+
+    m_displayList.push_back(newDisplayObject);
+}
 
 int Game::MousePicking()
 {
@@ -283,9 +340,33 @@ void Game::Render()
 
     //CAMERA POSITION ON HUD
     m_sprites->Begin();
+
     WCHAR   Buffer[256];
     std::wstring var = L"Cam X: " + std::to_wstring(camera.m_camPosition.x) + L"Cam Z: " + std::to_wstring(camera.m_camPosition.z);
     m_font->DrawString(m_sprites.get(), var.c_str(), XMFLOAT2(100, 10), Colors::Yellow);
+
+
+    var = L"Mode: " + std::to_wstring(GetMode());
+
+    switch (GetMode())
+    {
+        case Mode::camera:
+            var = L"Mode: camera";
+            break;
+
+
+        case Mode::selection:
+            var = L"Mode: selection";
+            break;
+
+
+        case Mode::spawning:
+            var = L"Mode: spawning";
+            break;
+    }
+
+    m_font->DrawString(m_sprites.get(), var.c_str(), XMFLOAT2(100, 30), Colors::Yellow);
+
     m_sprites->End();
 
     m_deviceResources->Present();

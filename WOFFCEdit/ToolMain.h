@@ -46,8 +46,5 @@ private:	//variables
 
 	int m_width;		//dimensions passed to directX
 	int m_height;
-	int m_currentChunk;			//the current chunk of thedatabase that we are operating on.  Dictates loading and saving. 
-	
-
-	
+	int m_currentChunk;			//the current chunk of thedatabase that we are operating on.  Dictates loading and saving.
 };

@@ -19,4 +19,7 @@ struct InputCommands
 	int mouse_y;
 	bool mouse_left;
 	bool mouse_right;
+
+	short wheel_pos;
+	short last_wheel_pos;
 };
