@@ -129,6 +129,7 @@ private:
 	RECT m_ScreenDimensions;
 	int selectedID;
 	Mode mode;
+	DisplayObject highLightObj;
 };
 
 std::wstring StringToWCHART(std::string s);

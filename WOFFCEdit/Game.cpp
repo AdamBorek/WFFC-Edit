@@ -301,29 +301,62 @@ void Game::Render()
 
 		XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, Quaternion::Identity, scale, g_XMZero, rotate, translate);
 
-		m_displayList[i].m_model->Draw(context, *m_states, local, m_view, m_projection, false);	//last variable in draw,  make TRUE for wireframe
+
+        m_displayList[i].m_model->Draw(context, *m_states, local, m_view, m_projection, false);	//last variable in draw,  make TRUE for wireframe
+
+        if (i == selectedID)
+        {
+            const XMVECTORF32 highlightScale = { m_displayList[i].m_scale.x * 1.03, m_displayList[i].m_scale.y * 1.03, m_displayList[i].m_scale.z * 1.03 };
+
+            local = m_world * XMMatrixTransformation(g_XMZero, Quaternion::Identity, highlightScale, g_XMZero, rotate, translate);
+
+            m_displayList[i].m_model->Draw(context, *m_states, local, m_view, m_projection, true);	//last variable in draw,  make TRUE for wireframe
+        }
 
 		m_deviceResources->PIXEndEvent();
 	}
 
     // render object above selected object
-    if (selectedID > -1 && selectedID < m_displayList.size())
-    {
-        m_deviceResources->PIXBeginEvent(L"Draw model");
-        const XMVECTORF32 scale = { m_displayList[selectedID].m_scale.x, m_displayList[selectedID].m_scale.y, m_displayList[selectedID].m_scale.z };
-        const XMVECTORF32 translate = { m_displayList[selectedID].m_position.x, m_displayList[selectedID].m_position.y + 1, m_displayList[selectedID].m_position.z };
+    //if (selectedID > -1 && selectedID < m_displayList.size())
+    //{
 
-        //convert degrees into radians for rotation matrix
-        XMVECTOR rotate = Quaternion::CreateFromYawPitchRoll(m_displayList[selectedID].m_orientation.y * 3.1415 / 180,
-            m_displayList[selectedID].m_orientation.x * 3.1415 / 180,
-            m_displayList[selectedID].m_orientation.z * 3.1415 / 180);
+    //    highLightObj.m_model = m_displayList[selectedID].m_model;
 
-        XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, Quaternion::Identity, scale, g_XMZero, rotate, translate);
+    //    m_deviceResources->PIXBeginEvent(L"Draw highlight");
+    //    const XMVECTORF32 scale = { m_displayList[selectedID].m_scale.x * 1.05, m_displayList[selectedID].m_scale.y * 1.05, m_displayList[selectedID].m_scale.z * 1.05 };
+    //    const XMVECTORF32 translate = { m_displayList[selectedID].m_position.x, m_displayList[selectedID].m_position.y, m_displayList[selectedID].m_position.z };
 
-        m_displayList[selectedID].m_model->Draw(context, *m_states, local, m_view, m_projection, false);	//last variable in draw,  make TRUE for wireframe
+    //    //convert degrees into radians for rotation matrix
+    //    XMVECTOR rotate = Quaternion::CreateFromYawPitchRoll(m_displayList[selectedID].m_orientation.y * 3.1415 / 180,
+    //        m_displayList[selectedID].m_orientation.x * 3.1415 / 180,
+    //        m_displayList[selectedID].m_orientation.z * 3.1415 / 180);
 
-        m_deviceResources->PIXEndEvent();
-    }
+    //    XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, Quaternion::Identity, scale, g_XMZero, rotate, translate);
+
+    //    if (!textureSet)
+    //    {
+    //        auto device = m_deviceResources->GetD3DDevice();
+
+    //        //create highlight texture
+    //        CreateDDSTextureFromFile(device, L"database/data/HighLightTexture.dds", nullptr, &highLightObj.m_texture_diffuse);	//load tex into Shader resource
+
+    //        //apply new texture to models effect
+    //        highLightObj.m_model->UpdateEffects([&](IEffect* effect) //This uses a Lambda function,  if you dont understand it: Look it up.
+    //        {
+    //            auto lights = dynamic_cast<BasicEffect*>(effect);
+    //            if (lights)
+    //            {
+    //                lights->SetTexture(highLightObj.m_texture_diffuse);
+    //            }
+    //        });
+
+    //        textureSet = true;
+    //    }
+
+    //    highLightObj.m_model->Draw(context, *m_states, local, m_view, m_projection, true);	//last variable in draw,  make TRUE for wireframe
+
+    //    m_deviceResources->PIXEndEvent();
+    //}
 
     
     //m_deviceResources->PIXEndEvent();
