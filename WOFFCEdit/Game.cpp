@@ -27,6 +27,7 @@ Game::Game()
     mode = Mode::camera;
 
     selectedID = -1;
+    gizmoSelectID = -1;
 }
 
 Game::~Game()
@@ -155,7 +156,7 @@ void Game::Update(DX::StepTimer const& timer)
 }
 #pragma endregion
 
-void Game::PlaceObject()
+void Game::SpawnObject()
 {
     const XMVECTOR nearSource = XMVectorSet(m_InputCommands.mouse_x, m_InputCommands.mouse_y, 0.0f, 1.0f);
     const XMVECTOR farSource = XMVectorSet(m_InputCommands.mouse_x, m_InputCommands.mouse_y, 1.0f, 1.0f);
@@ -210,6 +211,53 @@ void Game::GenerateObject(Vector3 pos)
     m_displayList.push_back(newDisplayObject);
 }
 
+int Game::MousePickingGizmo()
+{
+    int selectedID = -1;
+    float pickedDistance = 0;
+
+    //setup near and far planes of frustum with mouse X and mouse y passed down from Toolmain. 
+    //they may look the same but note, the difference in Z
+    const XMVECTOR nearSource = XMVectorSet(m_InputCommands.mouse_x, m_InputCommands.mouse_y, 0.0f, 1.0f);
+    const XMVECTOR farSource = XMVectorSet(m_InputCommands.mouse_x, m_InputCommands.mouse_y, 1.0f, 1.0f);
+
+    //Loop through entire display list of objects and pick with each in turn. 
+    for (int i = 0; i < m_gizmoList.size(); i++)
+    {
+        //Get the scale factor and translation of the object
+        const XMVECTORF32 scale = { m_gizmoList[i].m_scale.x,		m_gizmoList[i].m_scale.y,		m_gizmoList[i].m_scale.z };
+        const XMVECTORF32 translate = { m_gizmoList[i].m_position.x,	m_gizmoList[i].m_position.y,	m_gizmoList[i].m_position.z };
+
+        //convert euler angles into a quaternion for the rotation of the object
+        XMVECTOR rotate = Quaternion::CreateFromYawPitchRoll(m_gizmoList[i].m_orientation.y * 3.1415 / 180,
+            m_gizmoList[i].m_orientation.x * 3.1415 / 180,
+            m_gizmoList[i].m_orientation.z * 3.1415 / 180);
+
+        //create set the matrix of the selected object in the world based on the translation, scale and rotation.
+        XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, Quaternion::Identity, scale, g_XMZero, rotate, translate);
+
+        //Unproject the points on the near and far plane, with respect to the matrix we just created.
+        XMVECTOR nearPoint = XMVector3Unproject(nearSource, 0.0f, 0.0f, m_ScreenDimensions.right, m_ScreenDimensions.bottom, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, local);
+        XMVECTOR farPoint = XMVector3Unproject(farSource, 0.0f, 0.0f, m_ScreenDimensions.right, m_ScreenDimensions.bottom, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, local);
+
+        //turn the transformed points into our picking vector. 
+        XMVECTOR pickingVector = farPoint - nearPoint;
+        pickingVector = XMVector3Normalize(pickingVector);
+
+        //loop through mesh list for object
+        for (int y = 0; y < m_gizmoList[i].m_model.get()->meshes.size(); y++)
+        {
+            //checking for ray intersection
+            if (m_gizmoList[i].m_model.get()->meshes[y]->boundingBox.Intersects(nearPoint, pickingVector, pickedDistance))
+            {
+                selectedID = i;
+            }
+        }
+    }
+    
+    return selectedID;
+}
+
 int Game::MousePicking()
 {
     int selectedID = -1;
@@ -258,9 +306,50 @@ int Game::MousePicking()
     return selectedID;
 }
 
-void Game::SetSelectedID(int id)
+
+void Game::Copy(int id)
 {
-    selectedID = id;
+    if (id != -1)
+    {
+        copiedObj = m_displayList[id];
+    }
+
+}
+
+void Game::Paste(int id)
+{
+    // Check if copied object is valid by checking if its model exists
+    if (copiedObj.m_model == nullptr)
+    {
+        return;
+    }
+
+    const XMVECTOR nearSource = XMVectorSet(m_InputCommands.mouse_x, m_InputCommands.mouse_y, 0.0f, 1.0f);
+    const XMVECTOR farSource = XMVectorSet(m_InputCommands.mouse_x, m_InputCommands.mouse_y, 1.0f, 1.0f);
+
+    //Unproject the points on the near and far plane, with respect to the matrix we just created.
+    XMVECTOR nearPoint = XMVector3Unproject(nearSource, 0.0f, 0.0f, m_ScreenDimensions.right, m_ScreenDimensions.bottom, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, m_world);
+    XMVECTOR farPoint = XMVector3Unproject(farSource, 0.0f, 0.0f, m_ScreenDimensions.right, m_ScreenDimensions.bottom, m_deviceResources->GetScreenViewport().MinDepth, m_deviceResources->GetScreenViewport().MaxDepth, m_projection, m_view, m_world);
+
+    //get mouse cast vector
+    XMVECTOR mouseCast = farPoint - nearPoint;
+    mouseCast = XMVector3Normalize(mouseCast);
+
+    Vector3 objPos = nearPoint + mouseCast * 5;
+
+    copiedObj.m_position = objPos;
+
+    m_displayList.push_back(copiedObj);
+}
+
+void Game::Delete(int id)
+{
+    m_displayList.erase(m_displayList.begin() + id);
+}
+
+void Game::Cut(int id) {
+    Copy(id);
+    Delete(id);
 }
 
 #pragma region Frame Render
@@ -315,6 +404,49 @@ void Game::Render()
 
 		m_deviceResources->PIXEndEvent();
 	}
+
+    if (mode == Mode::selection && selectedID != -1)
+    {
+        m_deviceResources->PIXBeginEvent(L"Draw model");
+
+        DisplayObject selectedObj = m_displayList[selectedID];
+
+        for (int i = 0; i < m_gizmoList.size(); i++)
+        {
+            m_deviceResources->PIXBeginEvent(L"Draw model");
+            const XMVECTORF32 scale = { m_gizmoList[i].m_scale.x, m_gizmoList[i].m_scale.y, m_gizmoList[i].m_scale.z };
+            XMVECTORF32 translate;
+            switch (i)
+            {
+                case 0:
+                    translate = { selectedObj.m_position.x + 1.5f, selectedObj.m_position.y, selectedObj.m_position.z};
+                    break;
+
+                case 1:
+                    translate = { selectedObj.m_position.x, selectedObj.m_position.y, selectedObj.m_position.z + 1.5f };
+                    break;
+
+                case 2:
+                    translate = { selectedObj.m_position.x, selectedObj.m_position.y + 1.5f, selectedObj.m_position.z };
+                    break;
+
+            }
+
+
+            //convert degrees into radians for rotation matrix
+            XMVECTOR rotate = Quaternion::CreateFromYawPitchRoll(
+                m_gizmoList[i].m_orientation.y * 3.1415 / 180,
+                m_gizmoList[i].m_orientation.x * 3.1415 / 180,
+                m_gizmoList[i].m_orientation.z * 3.1415 / 180);
+
+            XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, Quaternion::Identity, scale, g_XMZero, rotate, translate);
+
+
+            m_gizmoList[i].m_model->Draw(context, *m_states, local, m_view, m_projection, false);	//last variable in draw,  make TRUE for wireframe
+
+            m_deviceResources->PIXEndEvent();
+        }
+    }
 
     // render object above selected object
     //if (selectedID > -1 && selectedID < m_displayList.size())
@@ -378,6 +510,8 @@ void Game::Render()
     std::wstring var = L"Cam X: " + std::to_wstring(camera.m_camPosition.x) + L"Cam Z: " + std::to_wstring(camera.m_camPosition.z);
     m_font->DrawString(m_sprites.get(), var.c_str(), XMFLOAT2(100, 10), Colors::Yellow);
 
+    var = L"Selected gizmo: " + std::to_wstring(gizmoSelectID);
+    m_font->DrawString(m_sprites.get(), var.c_str(), XMFLOAT2(100, 50), Colors::Yellow);
 
     var = L"Mode: " + std::to_wstring(GetMode());
 
@@ -588,6 +722,100 @@ void Game::BuildDisplayList(std::vector<SceneObject> * SceneGraph)
 		
 		
 		
+}
+
+void Game::BuildGizmoList()
+{
+
+    auto device = m_deviceResources->GetD3DDevice();
+    auto devicecontext = m_deviceResources->GetD3DDeviceContext();
+
+    if (!m_gizmoList.empty())		//is the vector empty
+    {
+        m_gizmoList.clear();		//if not, empty it
+    }
+
+    for (int i = 0; i < 3; i++)
+    {
+
+        //create a temp display object that we will populate then append to the display list.
+        DisplayObject newGizmoObject;
+
+        HRESULT rs;
+
+        switch (i)
+        {
+            case 0:
+                // Load Model
+                newGizmoObject.m_model = Model::CreateFromCMO(device, L"arrowX.cmo", *m_fxFactory, true);	//get DXSDK to load model "False" for LH coordinate system (maya)
+
+                //Load Texture
+                rs = CreateDDSTextureFromFile(device, L"blue.dds", nullptr, &newGizmoObject.m_texture_diffuse);	//load tex into Shader resource
+
+                //if texture fails.  load error default
+                if (rs)
+                {
+                    CreateDDSTextureFromFile(device, L"database/data/Error.dds", nullptr, &newGizmoObject.m_texture_diffuse);	//load tex into Shader resource
+                }
+
+                break;
+
+            case 1:
+                // Load Model
+                newGizmoObject.m_model = Model::CreateFromCMO(device, L"arrowZ.cmo", *m_fxFactory, true);	//get DXSDK to load model "False" for LH coordinate system (maya)
+
+                //Load Texture
+                rs = CreateDDSTextureFromFile(device, L"green.dds", nullptr, &newGizmoObject.m_texture_diffuse);	//load tex into Shader resource
+
+                //if texture fails.  load error default
+                if (rs)
+                {
+                    CreateDDSTextureFromFile(device, L"database/data/Error.dds", nullptr, &newGizmoObject.m_texture_diffuse);	//load tex into Shader resource
+                }
+
+                break;
+
+            case 2:
+                // Load Model
+                newGizmoObject.m_model = Model::CreateFromCMO(device, L"arrowY.cmo", *m_fxFactory, true);	//get DXSDK to load model "False" for LH coordinate system (maya)
+
+                //Load Texture
+                rs = CreateDDSTextureFromFile(device, L"red.dds", nullptr, &newGizmoObject.m_texture_diffuse);	//load tex into Shader resource
+
+                //if texture fails.  load error default
+                if (rs)
+                {
+                    CreateDDSTextureFromFile(device, L"database/data/Error.dds", nullptr, &newGizmoObject.m_texture_diffuse);	//load tex into Shader resource
+                }
+
+                break;
+        }
+
+        //apply new texture to models effect
+        newGizmoObject.m_model->UpdateEffects([&](IEffect* effect) //This uses a Lambda function,  if you dont understand it: Look it up.
+            {
+                auto lights = dynamic_cast<BasicEffect*>(effect);
+                if (lights)
+                {
+                    lights->SetTexture(newGizmoObject.m_texture_diffuse);
+                }
+            });
+
+
+        //set scale
+        newGizmoObject.m_scale.x = 0.5;
+        newGizmoObject.m_scale.y = 0.5;
+        newGizmoObject.m_scale.z = 0.5;
+
+        newGizmoObject.m_orientation.x = 0;
+        newGizmoObject.m_orientation.y = 0;
+        newGizmoObject.m_orientation.z = 0;
+
+        //set wireframe / render flags
+        newGizmoObject.m_render = false;
+
+        m_gizmoList.push_back(newGizmoObject);
+    }
 }
 
 void Game::BuildDisplayChunk(ChunkObject * SceneChunk)

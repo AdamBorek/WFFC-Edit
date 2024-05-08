@@ -30,6 +30,7 @@ public:	//variables
 	std::vector<SceneObject>    m_sceneGraph;	//our scenegraph storing all the objects in the current chunk
 	ChunkObject					m_chunk;		//our landscape chunk
 	int m_selectedObject;						//ID of current Selection
+	int m_selectedGizmo;
 
 private:	//methods
 	void	onContentAdded();
@@ -47,4 +48,7 @@ private:	//variables
 	int m_width;		//dimensions passed to directX
 	int m_height;
 	int m_currentChunk;			//the current chunk of thedatabase that we are operating on.  Dictates loading and saving.
+
+	bool copiedLastFrame;
+	bool pastedLastFrame;
 };

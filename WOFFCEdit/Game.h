@@ -35,10 +35,16 @@ public:
 
 	void ChangeMode(Mode newMode) { mode = newMode; }
 	Mode GetMode() { return mode; }
+	int MousePickingGizmo();
 	int MousePicking();
-	void SetSelectedID(int id);
+	void SetSelectedID(int id) { selectedID = id; }
+	void SetGizmoSelectedID(int id) { gizmoSelectID = id; }
 	void GenerateObject(DirectX::SimpleMath::Vector3 pos);
-	void PlaceObject();
+	void SpawnObject();
+	void Copy(int id);
+	void Paste(int id);
+	void Delete(int id);
+	void Cut(int id);
 
 	// Rendering helpers
 	void Clear();
@@ -56,6 +62,7 @@ public:
 
 	//tool specific
 	void BuildDisplayList(std::vector<SceneObject> * SceneGraph); //note vector passed by reference 
+	void BuildGizmoList();
 	void BuildDisplayChunk(ChunkObject *SceneChunk);
 	void SaveDisplayChunk(ChunkObject *SceneChunk);	//saves geometry et al
 	void ClearDisplayList();
@@ -75,6 +82,7 @@ private:
 
 	//tool specific
 	std::vector<DisplayObject>			m_displayList;
+	std::vector<DisplayObject>			m_gizmoList;
 	DisplayChunk						m_displayChunk;
 	InputCommands						m_InputCommands;
 
@@ -128,8 +136,14 @@ private:
 
 	RECT m_ScreenDimensions;
 	int selectedID;
+	int gizmoSelectID;
 	Mode mode;
-	DisplayObject highLightObj;
+	DisplayObject copiedObj;
+
+	//DisplayObject highLightObj;
+
+	bool copying;
+	bool cutting;
 };
 
 std::wstring StringToWCHART(std::string s);

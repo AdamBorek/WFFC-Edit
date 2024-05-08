@@ -9,7 +9,8 @@ ToolMain::ToolMain()
 {
 
 	m_currentChunk = 0;		//default value
-	m_selectedObject = 0;	//initial selection ID
+	m_selectedObject = -1;	//initial selection ID
+	m_selectedGizmo = -1;	//initial gizmo slection ID
 	m_sceneGraph.clear();	//clear the vector for the scenegraph
 	m_databaseConnection = NULL;
 
@@ -174,9 +175,12 @@ void ToolMain::onActionLoad()
 	m_chunk.tex_splat_3_tiling = sqlite3_column_int(pResultsChunk, 17);
 	m_chunk.tex_splat_4_tiling = sqlite3_column_int(pResultsChunk, 18);
 
-
 	//Process REsults into renderable
 	m_d3dRenderer.BuildDisplayList(&m_sceneGraph);
+
+	//Setup gizmos
+	m_d3dRenderer.BuildGizmoList();
+
 	//build the renderable chunk 
 	m_d3dRenderer.BuildDisplayChunk(&m_chunk);
 
@@ -291,7 +295,7 @@ void ToolMain::Tick(MSG *msg)
 
 
 	// Handle changing modes
-	if (m_toolInputCommands.wheel_pos != m_toolInputCommands.last_wheel_pos)
+	if (m_toolInputCommands.lCtrl && m_toolInputCommands.wheel_pos != m_toolInputCommands.last_wheel_pos)
 	{
 		if (m_toolInputCommands.wheel_pos > m_toolInputCommands.last_wheel_pos)
 		{
@@ -303,6 +307,8 @@ void ToolMain::Tick(MSG *msg)
 					break;
 
 				case Mode::selection:
+					m_d3dRenderer.SetSelectedID(-1);
+					m_d3dRenderer.SetGizmoSelectedID(-1);
 					m_d3dRenderer.ChangeMode(Mode::camera);
 					break;
 
@@ -320,6 +326,8 @@ void ToolMain::Tick(MSG *msg)
 				break;
 
 			case Mode::selection:
+				m_d3dRenderer.SetSelectedID(-1);
+				m_d3dRenderer.SetGizmoSelectedID(-1);
 				m_d3dRenderer.ChangeMode(Mode::spawning);
 				break;
 
@@ -341,17 +349,48 @@ void ToolMain::Tick(MSG *msg)
 				break;
 
 			case Mode::selection:
-				m_selectedObject = m_d3dRenderer.MousePicking();
-				m_d3dRenderer.SetSelectedID(m_selectedObject);
+				m_selectedGizmo = m_d3dRenderer.MousePickingGizmo();
+				m_d3dRenderer.SetGizmoSelectedID(m_selectedGizmo);
+
+				if (m_selectedGizmo == -1)
+				{
+					m_selectedObject = m_d3dRenderer.MousePicking();
+					m_d3dRenderer.SetSelectedID(m_selectedObject);
+				}
+
 				break;
 
 			case Mode::spawning:
-				m_d3dRenderer.PlaceObject();
+				m_d3dRenderer.SpawnObject();
 				break;
 
 		}
 
 		m_toolInputCommands.mouse_left = false;
+	}
+
+	// Handle copying, cutting and pasting
+	// TODO: copying last frame stuff
+	if (m_toolInputCommands.lCtrl)
+	{
+		if (m_toolInputCommands.copy && m_selectedObject != -1)
+		{
+			m_d3dRenderer.Copy(m_selectedObject);
+		}
+		else if (m_toolInputCommands.cut && m_selectedObject != -1)
+		{
+			m_d3dRenderer.Cut(m_selectedObject);
+		}
+		else if (m_toolInputCommands.paste)
+		{
+			m_d3dRenderer.Paste(m_selectedObject);
+		}
+
+	}
+	else
+	{
+		copiedLastFrame = false;
+		pastedLastFrame = false;
 	}
 
 	m_toolInputCommands.last_wheel_pos = m_toolInputCommands.wheel_pos;
@@ -408,4 +447,9 @@ void ToolMain::UpdateInput(MSG * msg)
 
 	m_toolInputCommands.up = m_keyArray['E'];
 	m_toolInputCommands.down = m_keyArray['Q'];
+
+	m_toolInputCommands.lCtrl = m_keyArray[17];
+	m_toolInputCommands.copy = m_keyArray['C'];
+	m_toolInputCommands.cut = m_keyArray['X'];
+	m_toolInputCommands.paste = m_keyArray['V'];
 }

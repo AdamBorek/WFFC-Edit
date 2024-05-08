@@ -13,6 +13,11 @@ struct InputCommands
 	bool rotLeft;
 	bool rotUp;
 	bool rotDown;
+	bool lCtrl;
+
+	bool copy;
+	bool cut;
+	bool paste;
 
 	// mouse
 	int mouse_x;
