@@ -50,5 +50,6 @@ private:	//variables
 	int m_currentChunk;			//the current chunk of thedatabase that we are operating on.  Dictates loading and saving.
 
 	bool copiedLastFrame;
+	bool cutLastFrame;
 	bool pastedLastFrame;
 };

@@ -419,19 +419,20 @@ void Game::Render()
             switch (i)
             {
                 case 0:
-                    translate = { selectedObj.m_position.x + 1.5f, selectedObj.m_position.y, selectedObj.m_position.z};
+                    m_gizmoList[i].m_position = Vector3(selectedObj.m_position.x + 1.5f, selectedObj.m_position.y, selectedObj.m_position.z);
                     break;
 
                 case 1:
-                    translate = { selectedObj.m_position.x, selectedObj.m_position.y, selectedObj.m_position.z + 1.5f };
+                    m_gizmoList[i].m_position = Vector3(selectedObj.m_position.x, selectedObj.m_position.y, selectedObj.m_position.z + 1.5f);
                     break;
 
                 case 2:
-                    translate = { selectedObj.m_position.x, selectedObj.m_position.y + 1.5f, selectedObj.m_position.z };
+                    m_gizmoList[i].m_position = Vector3(selectedObj.m_position.x, selectedObj.m_position.y + 1.5f, selectedObj.m_position.z);
                     break;
 
             }
 
+            translate = { m_gizmoList[i].m_position.x, m_gizmoList[i].m_position.y, m_gizmoList[i].m_position.z };
 
             //convert degrees into radians for rotation matrix
             XMVECTOR rotate = Quaternion::CreateFromYawPitchRoll(

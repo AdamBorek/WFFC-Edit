@@ -373,27 +373,53 @@ void ToolMain::Tick(MSG *msg)
 	// TODO: copying last frame stuff
 	if (m_toolInputCommands.lCtrl)
 	{
-		if (m_toolInputCommands.copy && m_selectedObject != -1)
+		if (m_toolInputCommands.copy && m_selectedObject != -1 && !copiedLastFrame)
 		{
 			m_d3dRenderer.Copy(m_selectedObject);
 		}
-		else if (m_toolInputCommands.cut && m_selectedObject != -1)
+		else if (m_toolInputCommands.cut && m_selectedObject != -1 && !cutLastFrame)
 		{
 			m_d3dRenderer.Cut(m_selectedObject);
+			m_selectedObject = -1;
+			m_d3dRenderer.SetSelectedID(m_selectedObject);
 		}
-		else if (m_toolInputCommands.paste)
+		else if (m_toolInputCommands.paste && !pastedLastFrame)
 		{
 			m_d3dRenderer.Paste(m_selectedObject);
 		}
 
 	}
+
+	// set values for last frame inputs
+
+	m_toolInputCommands.last_wheel_pos = m_toolInputCommands.wheel_pos;
+
+	if (m_toolInputCommands.lCtrl && m_toolInputCommands.copy)
+	{
+		copiedLastFrame = true;
+	}
 	else
 	{
 		copiedLastFrame = false;
-		pastedLastFrame = false;
 	}
 
-	m_toolInputCommands.last_wheel_pos = m_toolInputCommands.wheel_pos;
+	if (m_toolInputCommands.lCtrl && m_toolInputCommands.cut)
+	{
+		cutLastFrame = true;
+	}
+	else
+	{
+		cutLastFrame = false;
+	}
+
+	if (m_toolInputCommands.lCtrl && m_toolInputCommands.paste)
+	{
+		pastedLastFrame = true;
+	}
+	else
+	{
+		pastedLastFrame = false;
+	}
 }
 
 void ToolMain::UpdateInput(MSG * msg)
