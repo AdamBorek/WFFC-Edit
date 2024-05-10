@@ -24,7 +24,7 @@ Game::Game()
 	//modes
 	m_grid = false;
 
-    mode = Mode::camera;
+    mode = Mode::selection;
 
     selectedID = -1;
     gizmoSelectID = -1;
@@ -306,6 +306,23 @@ int Game::MousePicking()
     return selectedID;
 }
 
+void Game::MoveObject(int id, MoveAxis axis, float distance)
+{
+    switch (axis)
+    {
+        case MoveAxis::X:
+            m_displayList[id].m_position += Vector3(distance, 0, 0);
+            break;
+
+        case MoveAxis::Y:
+            m_displayList[id].m_position += Vector3(0, distance, 0);
+            break;
+
+        case MoveAxis::Z:
+            m_displayList[id].m_position += Vector3(0, 0, distance);
+            break;
+    }
+}
 
 void Game::Copy(int id)
 {
@@ -449,51 +466,6 @@ void Game::Render()
         }
     }
 
-    // render object above selected object
-    //if (selectedID > -1 && selectedID < m_displayList.size())
-    //{
-
-    //    highLightObj.m_model = m_displayList[selectedID].m_model;
-
-    //    m_deviceResources->PIXBeginEvent(L"Draw highlight");
-    //    const XMVECTORF32 scale = { m_displayList[selectedID].m_scale.x * 1.05, m_displayList[selectedID].m_scale.y * 1.05, m_displayList[selectedID].m_scale.z * 1.05 };
-    //    const XMVECTORF32 translate = { m_displayList[selectedID].m_position.x, m_displayList[selectedID].m_position.y, m_displayList[selectedID].m_position.z };
-
-    //    //convert degrees into radians for rotation matrix
-    //    XMVECTOR rotate = Quaternion::CreateFromYawPitchRoll(m_displayList[selectedID].m_orientation.y * 3.1415 / 180,
-    //        m_displayList[selectedID].m_orientation.x * 3.1415 / 180,
-    //        m_displayList[selectedID].m_orientation.z * 3.1415 / 180);
-
-    //    XMMATRIX local = m_world * XMMatrixTransformation(g_XMZero, Quaternion::Identity, scale, g_XMZero, rotate, translate);
-
-    //    if (!textureSet)
-    //    {
-    //        auto device = m_deviceResources->GetD3DDevice();
-
-    //        //create highlight texture
-    //        CreateDDSTextureFromFile(device, L"database/data/HighLightTexture.dds", nullptr, &highLightObj.m_texture_diffuse);	//load tex into Shader resource
-
-    //        //apply new texture to models effect
-    //        highLightObj.m_model->UpdateEffects([&](IEffect* effect) //This uses a Lambda function,  if you dont understand it: Look it up.
-    //        {
-    //            auto lights = dynamic_cast<BasicEffect*>(effect);
-    //            if (lights)
-    //            {
-    //                lights->SetTexture(highLightObj.m_texture_diffuse);
-    //            }
-    //        });
-
-    //        textureSet = true;
-    //    }
-
-    //    highLightObj.m_model->Draw(context, *m_states, local, m_view, m_projection, true);	//last variable in draw,  make TRUE for wireframe
-
-    //    m_deviceResources->PIXEndEvent();
-    //}
-
-    
-    //m_deviceResources->PIXEndEvent();
-
 	//RENDER TERRAIN
 	context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
 	context->OMSetDepthStencilState(m_states->DepthDefault(),0);
@@ -511,22 +483,13 @@ void Game::Render()
     std::wstring var = L"Cam X: " + std::to_wstring(camera.m_camPosition.x) + L"Cam Z: " + std::to_wstring(camera.m_camPosition.z);
     m_font->DrawString(m_sprites.get(), var.c_str(), XMFLOAT2(100, 10), Colors::Yellow);
 
-    var = L"Selected gizmo: " + std::to_wstring(gizmoSelectID);
-    m_font->DrawString(m_sprites.get(), var.c_str(), XMFLOAT2(100, 50), Colors::Yellow);
-
     var = L"Mode: " + std::to_wstring(GetMode());
 
     switch (GetMode())
     {
-        case Mode::camera:
-            var = L"Mode: camera";
-            break;
-
-
         case Mode::selection:
             var = L"Mode: selection";
             break;
-
 
         case Mode::spawning:
             var = L"Mode: spawning";

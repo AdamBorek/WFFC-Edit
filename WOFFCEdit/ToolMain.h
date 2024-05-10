@@ -49,7 +49,12 @@ private:	//variables
 	int m_height;
 	int m_currentChunk;			//the current chunk of thedatabase that we are operating on.  Dictates loading and saving.
 
+	bool lastMouseDown; // for checking left mouse hold
+
 	bool copiedLastFrame;
 	bool cutLastFrame;
 	bool pastedLastFrame;
+
+	float lastMouseX;
+	float lastMouseY;
 };

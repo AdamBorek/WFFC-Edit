@@ -6,7 +6,7 @@ using namespace DirectX::SimpleMath;
 Camera::Camera()
 {
 	//functional
-	m_moveSpeed = 0.3;
+	m_moveSpeed = 0.2;
 	m_camRotRate = 1.0;
 
 	//camera

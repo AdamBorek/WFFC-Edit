@@ -14,7 +14,9 @@
 #include <vector>
 #include "Camera.h"
 
-enum Mode { camera, selection, spawning };
+enum Mode { selection, spawning };
+
+enum MoveAxis { X, Y, Z };
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -45,6 +47,11 @@ public:
 	void Paste(int id);
 	void Delete(int id);
 	void Cut(int id);
+	void MoveObject(int id, MoveAxis axis, float distance);
+
+	Camera GetCamera() { return camera; }
+
+	std::vector<DisplayObject> GetDisplayList() { return m_displayList; }
 
 	// Rendering helpers
 	void Clear();

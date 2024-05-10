@@ -18,12 +18,15 @@ struct InputCommands
 	bool copy;
 	bool cut;
 	bool paste;
+	bool deleteObj;
 
 	// mouse
 	int mouse_x;
 	int mouse_y;
 	bool mouse_left;
 	bool mouse_right;
+
+	bool mouse_left_hold;
 
 	short wheel_pos;
 	short last_wheel_pos;

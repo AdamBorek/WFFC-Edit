@@ -295,21 +295,17 @@ void ToolMain::Tick(MSG *msg)
 
 
 	// Handle changing modes
-	if (m_toolInputCommands.lCtrl && m_toolInputCommands.wheel_pos != m_toolInputCommands.last_wheel_pos)
+	if (m_toolInputCommands.wheel_pos != m_toolInputCommands.last_wheel_pos)
 	{
 		if (m_toolInputCommands.wheel_pos > m_toolInputCommands.last_wheel_pos)
 		{
 
 			switch (m_d3dRenderer.GetMode())
 			{
-				case Mode::camera:
-					m_d3dRenderer.ChangeMode(Mode::spawning);
-					break;
-
 				case Mode::selection:
 					m_d3dRenderer.SetSelectedID(-1);
 					m_d3dRenderer.SetGizmoSelectedID(-1);
-					m_d3dRenderer.ChangeMode(Mode::camera);
+					m_d3dRenderer.ChangeMode(Mode::spawning);
 					break;
 
 				case Mode::spawning:
@@ -321,19 +317,15 @@ void ToolMain::Tick(MSG *msg)
 		{
 			switch (m_d3dRenderer.GetMode())
 			{
-			case Mode::camera:
-				m_d3dRenderer.ChangeMode(Mode::selection);
-				break;
+				case Mode::selection:
+					m_d3dRenderer.SetSelectedID(-1);
+					m_d3dRenderer.SetGizmoSelectedID(-1);
+					m_d3dRenderer.ChangeMode(Mode::spawning);
+					break;
 
-			case Mode::selection:
-				m_d3dRenderer.SetSelectedID(-1);
-				m_d3dRenderer.SetGizmoSelectedID(-1);
-				m_d3dRenderer.ChangeMode(Mode::spawning);
-				break;
-
-			case Mode::spawning:
-				m_d3dRenderer.ChangeMode(Mode::camera);
-				break;
+				case Mode::spawning:
+					m_d3dRenderer.ChangeMode(Mode::selection);
+					break;
 			}
 		}
 
@@ -344,15 +336,49 @@ void ToolMain::Tick(MSG *msg)
 	{
 		switch (m_d3dRenderer.GetMode())
 		{
-			case Mode::camera:
-				// do nothing
-				break;
-
 			case Mode::selection:
-				m_selectedGizmo = m_d3dRenderer.MousePickingGizmo();
-				m_d3dRenderer.SetGizmoSelectedID(m_selectedGizmo);
 
-				if (m_selectedGizmo == -1)
+				if (!lastMouseDown)
+				{
+					m_selectedGizmo = m_d3dRenderer.MousePickingGizmo();
+					m_d3dRenderer.SetGizmoSelectedID(m_selectedGizmo);
+				}
+				
+				if (lastMouseDown && m_selectedObject != -1)
+				{
+					
+
+					float xDiff = (m_toolInputCommands.mouse_x - lastMouseX) / 100;
+					float yDiff = -(m_toolInputCommands.mouse_y - lastMouseY) / 100;
+
+					bool oppositeX = false;
+					bool oppositeZ = false;
+
+					if (m_d3dRenderer.GetCamera().m_camPosition.z < m_d3dRenderer.GetDisplayList()[m_selectedObject].m_position.z && m_selectedGizmo == 0)
+					{
+						xDiff *= -1;
+					}
+
+					if (m_d3dRenderer.GetCamera().m_camPosition.x > m_d3dRenderer.GetDisplayList()[m_selectedObject].m_position.x && m_selectedGizmo == 1)
+					{
+						xDiff *= -1;
+					}
+
+					if (m_selectedGizmo == 0)
+					{
+						m_d3dRenderer.MoveObject(m_selectedObject, MoveAxis::X, xDiff);
+					}
+					else if (m_selectedGizmo == 1)
+					{
+						m_d3dRenderer.MoveObject(m_selectedObject, MoveAxis::Z, xDiff);
+					}
+					else if (m_selectedGizmo == 2)
+					{
+						m_d3dRenderer.MoveObject(m_selectedObject, MoveAxis::Y, yDiff);
+					}
+				}
+
+				if (m_selectedGizmo == -1 && !lastMouseDown)
 				{
 					m_selectedObject = m_d3dRenderer.MousePicking();
 					m_d3dRenderer.SetSelectedID(m_selectedObject);
@@ -361,16 +387,18 @@ void ToolMain::Tick(MSG *msg)
 				break;
 
 			case Mode::spawning:
-				m_d3dRenderer.SpawnObject();
+				if (!lastMouseDown)
+				{
+					m_d3dRenderer.SpawnObject();
+				}
 				break;
 
 		}
 
-		m_toolInputCommands.mouse_left = false;
+		//m_toolInputCommands.mouse_left = false;
 	}
 
 	// Handle copying, cutting and pasting
-	// TODO: copying last frame stuff
 	if (m_toolInputCommands.lCtrl)
 	{
 		if (m_toolInputCommands.copy && m_selectedObject != -1 && !copiedLastFrame)
@@ -388,6 +416,14 @@ void ToolMain::Tick(MSG *msg)
 			m_d3dRenderer.Paste(m_selectedObject);
 		}
 
+	}
+
+	// Handle deleting
+	if (m_toolInputCommands.deleteObj && m_selectedObject != -1)
+	{
+		m_d3dRenderer.Delete(m_selectedObject);
+		m_selectedObject = -1;
+		m_d3dRenderer.SetSelectedID(m_selectedObject);
 	}
 
 	// set values for last frame inputs
@@ -420,6 +456,11 @@ void ToolMain::Tick(MSG *msg)
 	{
 		pastedLastFrame = false;
 	}
+
+	lastMouseDown = m_toolInputCommands.mouse_left;
+
+	lastMouseX = m_toolInputCommands.mouse_x;
+	lastMouseY = m_toolInputCommands.mouse_y;
 }
 
 void ToolMain::UpdateInput(MSG * msg)
@@ -478,4 +519,5 @@ void ToolMain::UpdateInput(MSG * msg)
 	m_toolInputCommands.copy = m_keyArray['C'];
 	m_toolInputCommands.cut = m_keyArray['X'];
 	m_toolInputCommands.paste = m_keyArray['V'];
+	m_toolInputCommands.deleteObj = m_keyArray['Z'];
 }
