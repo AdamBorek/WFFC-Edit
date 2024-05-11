@@ -37,20 +37,15 @@ Camera::Camera()
 
 void Camera::Update(InputCommands input)
 {
-
-	//TODO  any more complex than this, and the camera should be abstracted out to somewhere else
-	//camera motion is on a plane, so kill the 7 component of the look direction
-	Vector3 planarMotionVector = m_camLookDirection;
-	planarMotionVector.y = 0.0;
-
 	if (input.mouse_right)
 	{
-		float rotX = input.mouse_x - m_prevX;
-		float rotY = input.mouse_y - m_prevY;
+		float rotX = input.mouse_x - lastX;
+		float rotY = input.mouse_y - lastY;
 
 		m_camOrientation.y -= rotX * m_camRotRate;
 		m_camOrientation.x -= rotY * m_camRotRate;
 
+		// Clamp vertical rotation to prevent flipping
 		if (m_camOrientation.x > 90)
 		{
 			m_camOrientation.x = 90;
@@ -61,44 +56,31 @@ void Camera::Update(InputCommands input)
 		}
 	}
 
-	m_camLookDirection.x = sin((m_camOrientation.y) * 3.1415 / 180);
-	m_camLookDirection.y = sin((m_camOrientation.x) * 3.1415 / 180);
-	m_camLookDirection.z = cos((m_camOrientation.y) * 3.1415 / 180);
+	float angleY = m_camOrientation.y * XM_PI / 180.0f;
+	float angleX = m_camOrientation.x * XM_PI / 180.0f;
+	m_camLookDirection.x = sin(angleY) * cos(angleX);
+	m_camLookDirection.y = sin(angleX);
+	m_camLookDirection.z = cos(angleY) * cos(angleX);
 	m_camLookDirection.Normalize();
 
 	//create right vector from look Direction
 	m_camLookDirection.Cross(Vector3::UnitY, m_camRight);
 
-	//process input and update stuff
-	if (input.forward)
-	{
-		m_camPosition += m_camLookDirection * m_moveSpeed;
-	}
-	if (input.back)
-	{
-		m_camPosition -= m_camLookDirection * m_moveSpeed;
-	}
-	if (input.right)
-	{
-		m_camPosition += m_camRight * m_moveSpeed;
-	}
-	if (input.left)
-	{
-		m_camPosition -= m_camRight * m_moveSpeed;
-	}
-	if (input.up)
-	{
-		m_camPosition.y += m_moveSpeed;
-	}
-	if (input.down)
-	{
-		m_camPosition.y -= m_moveSpeed;
-	}
+	//process input
+	Vector3 moveDirection = Vector3::Zero;
+	if (input.forward)   moveDirection += m_camLookDirection;
+	if (input.back)      moveDirection -= m_camLookDirection;
+	if (input.right)     moveDirection += m_camRight;
+	if (input.left)      moveDirection -= m_camRight;
+	if (input.up)        moveDirection.y += 1.0f;
+	if (input.down)      moveDirection.y -= 1.0f;
+
+	m_camPosition += moveDirection * m_moveSpeed;
 
 	//update lookat point
 	m_camLookAt = m_camPosition + m_camLookDirection;
 
 	// update previous position
-	m_prevX = input.mouse_x;
-	m_prevY = input.mouse_y;
+	lastX = input.mouse_x;
+	lastY = input.mouse_y;
 }

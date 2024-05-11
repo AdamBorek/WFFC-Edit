@@ -346,8 +346,6 @@ void ToolMain::Tick(MSG *msg)
 				
 				if (lastMouseDown && m_selectedObject != -1)
 				{
-					
-
 					float xDiff = (m_toolInputCommands.mouse_x - lastMouseX) / 100;
 					float yDiff = -(m_toolInputCommands.mouse_y - lastMouseY) / 100;
 

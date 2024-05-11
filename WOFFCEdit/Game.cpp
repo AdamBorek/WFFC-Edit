@@ -298,6 +298,7 @@ int Game::MousePicking()
             if (m_displayList[i].m_model.get()->meshes[y]->boundingBox.Intersects(nearPoint, pickingVector, pickedDistance))
             {
                 selectedID = i;
+                return selectedID;
             }
         }
     }
@@ -424,8 +425,6 @@ void Game::Render()
 
     if (mode == Mode::selection && selectedID != -1)
     {
-        m_deviceResources->PIXBeginEvent(L"Draw model");
-
         DisplayObject selectedObj = m_displayList[selectedID];
 
         for (int i = 0; i < m_gizmoList.size(); i++)

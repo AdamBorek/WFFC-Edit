@@ -24,7 +24,7 @@ public:
 	DirectX::SimpleMath::Vector3 m_camLookDirection;
 	DirectX::SimpleMath::Vector3 m_camRight;
 
-	float m_prevX;
-	float m_prevY;
+	float lastX;
+	float lastY;
 };
 
